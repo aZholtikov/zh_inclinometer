@@ -48,7 +48,6 @@ esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config)
     ZH_ERROR_CHECK(err == ESP_OK, err, NULL, "Inclinometer initialization failed. GPIO initialization failed.");
     _encoder_position = 0;
     _encoder_step = 360.0 / (double)config->encoder_pulses;
-    printf("_encoder_step is %0.2f degrees.\n", _encoder_step);
     _a_gpio_number = config->a_gpio_number;
     _b_gpio_number = config->b_gpio_number;
     _is_initialized = true;
