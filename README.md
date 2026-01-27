@@ -2,7 +2,7 @@
 
 ## Tested on
 
-1. [ESP32 ESP-IDF v5.5.1](https://docs.espressif.com/projects/esp-idf/en/v5.5.1/esp32/index.html)
+1. [ESP32 ESP-IDF v5.5.2](https://docs.espressif.com/projects/esp-idf/en/v5.5.2/esp32/index.html)
 
 ## SAST Tools
 
@@ -13,7 +13,8 @@
 1. For correct operation, please enable the following settings in the menuconfig:
 
 ```text
-GPIO_CTRL_FUNC_IN_IRAM
+PCNT_CTRL_FUNC_IN_IRAM
+PCNT_ISR_IRAM_SAF
 ```
 
 ## Using
@@ -36,7 +37,7 @@ In the application, add the component:
 ```c
 #include "zh_inclinometer.h"
 
-double inclinometer_position = 0;
+zh_inclinometer_handle_t inclinometer_handle = {0};
 
 void app_main(void)
 {
@@ -45,11 +46,12 @@ void app_main(void)
     config.a_gpio_number = GPIO_NUM_26;
     config.b_gpio_number = GPIO_NUM_27;
     config.encoder_pulses = 3600;
-    zh_inclinometer_init(&config);
+    zh_inclinometer_init(&config, &inclinometer_handle);
     for (;;)
     {
-        zh_inclinometer_get(&inclinometer_position);
-        printf("Inclinometer position is %0.2f degrees.\n", inclinometer_position);
+        float angle = 0;
+        zh_inclinometer_get(&inclinometer_handle, &angle);
+        printf("Inclinometer position is %0.2f degrees.\n", angle);
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
