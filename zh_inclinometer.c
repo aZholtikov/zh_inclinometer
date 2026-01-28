@@ -75,7 +75,7 @@ static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_con
     return ESP_OK;
 }
 
-static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle)
+static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle) // -V2008
 {
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Invalid argument.");
     ZH_ERROR_CHECK(config->a_gpio_number < GPIO_NUM_MAX && config->b_gpio_number < GPIO_NUM_MAX, ESP_ERR_INVALID_ARG, NULL, "Invalid GPIO number.")
