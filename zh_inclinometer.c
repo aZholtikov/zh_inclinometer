@@ -20,6 +20,7 @@ esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_i
 {
     ZH_LOGI("Inclinometer initialization started.");
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer initialization failed. Invalid argument.");
+    ZH_ERROR_CHECK(handle->is_initialized == false, ESP_ERR_INVALID_STATE, NULL, "Inclinometer initialization failed. Inclinometer is already initialized.");
     esp_err_t err = _zh_inclinometer_validate_config(config);
     ZH_ERROR_CHECK(err == ESP_OK, err, NULL, "Inclinometer initialization failed. Initial configuration check failed.");
     err = _zh_inclinometer_pcnt_init(config, handle);
@@ -70,14 +71,12 @@ esp_err_t zh_inclinometer_reset(zh_inclinometer_handle_t *handle)
 
 static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_config_t *config)
 {
-    ZH_ERROR_CHECK(config != NULL, ESP_ERR_INVALID_ARG, NULL, "Invalid configuration.");
     ZH_ERROR_CHECK(config->encoder_pulses > 0, ESP_ERR_INVALID_ARG, NULL, "Invalid encoder pulses.");
     return ESP_OK;
 }
 
 static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle) // -V2008
 {
-    ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Invalid argument.");
     ZH_ERROR_CHECK(config->a_gpio_number < GPIO_NUM_MAX && config->b_gpio_number < GPIO_NUM_MAX, ESP_ERR_INVALID_ARG, NULL, "Invalid GPIO number.")
     ZH_ERROR_CHECK(config->a_gpio_number != config->b_gpio_number, ESP_ERR_INVALID_ARG, NULL, "Encoder A and B GPIO is same.")
     pcnt_unit_config_t pcnt_unit_config = {
@@ -115,8 +114,7 @@ static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t 
     err = pcnt_channel_set_level_action(pcnt_channel_b_handle, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_HOLD);
     ZH_ERROR_CHECK(err == ESP_OK, err, pcnt_del_channel(pcnt_channel_a_handle); pcnt_del_channel(pcnt_channel_b_handle); pcnt_del_unit(pcnt_unit_handle), "PCNT initialization failed.");
     err = pcnt_unit_enable(pcnt_unit_handle);
-    ZH_ERROR_CHECK(err == ESP_OK, err, pcnt_del_channel(pcnt_channel_a_handle); pcnt_del_channel(pcnt_channel_b_handle); pcnt_del_unit(pcnt_unit_handle),
-                                                                                                                         "PCNT initialization failed.");
+    ZH_ERROR_CHECK(err == ESP_OK, err, pcnt_del_channel(pcnt_channel_a_handle); pcnt_del_channel(pcnt_channel_b_handle); pcnt_del_unit(pcnt_unit_handle), "PCNT initialization failed.");
     err = pcnt_unit_clear_count(pcnt_unit_handle);
     ZH_ERROR_CHECK(err == ESP_OK, err, pcnt_unit_disable(pcnt_unit_handle); pcnt_del_channel(pcnt_channel_a_handle); pcnt_del_channel(pcnt_channel_b_handle);
                    pcnt_del_unit(pcnt_unit_handle), "PCNT initialization failed.");
