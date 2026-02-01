@@ -16,7 +16,7 @@
 static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_config_t *config);
 static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle);
 
-esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle)
+esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle) // -V2008
 {
     ZH_LOGI("Inclinometer initialization started.");
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer initialization failed. Invalid argument.");
