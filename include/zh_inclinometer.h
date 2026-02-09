@@ -18,6 +18,7 @@
         .a_gpio_number = GPIO_NUM_MAX,        \
         .b_gpio_number = GPIO_NUM_MAX,        \
         .pullup = true,                       \
+        .rotation = true,                     \
         .encoder_pulses = 0}
 
 #ifdef __cplusplus
@@ -33,6 +34,7 @@ extern "C"
         uint8_t a_gpio_number;   /*!< Encoder A GPIO number. */
         uint8_t b_gpio_number;   /*!< Encoder B GPIO number. */
         bool pullup;             /*!< Pullup GPIO enable/disable. */
+        bool rotation;           /*!< Encoder rotation (true - positive for CW rotation, false - positive for CCW rotation). */
         uint16_t encoder_pulses; /*!< Number of pulses per one rotation. */
     } zh_inclinometer_init_config_t;
 
@@ -45,6 +47,7 @@ extern "C"
         pcnt_channel_handle_t pcnt_channel_a_handle; /*!< Inclinometer unique pcnt channel handle. */
         pcnt_channel_handle_t pcnt_channel_b_handle; /*!< Inclinometer unique pcnt channel handle. */
         float degrees_per_pulse;                     /*!< Number of degrees per pulse. */
+        bool rotation;                               /*!< Encoder rotation. */
         bool is_initialized;                         /*!< Inclinometer initialization flag. */
     } zh_inclinometer_handle_t;
 

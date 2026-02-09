@@ -26,6 +26,7 @@ esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_i
     err = _zh_inclinometer_pcnt_init(config, handle);
     ZH_ERROR_CHECK(err == ESP_OK, err, NULL, "Inclinometer initialization failed. PCNT initialization failed.");
     handle->degrees_per_pulse = 360.0 / config->encoder_pulses;
+    handle->rotation = config->rotation;
     handle->is_initialized = true;
     ZH_LOGI("Inclinometer initialization completed successfully.");
     return ESP_OK;
@@ -54,7 +55,7 @@ esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t *handle, float *angle)
     int pcnt_count = 0;
     pcnt_unit_get_count(handle->pcnt_unit_handle, &pcnt_count);
     float angle_temp = pcnt_count * handle->degrees_per_pulse;
-    *angle = (angle_temp < 0) ? -angle_temp : angle_temp;
+    *angle = (handle->rotation == true) ? angle_temp : -angle_temp;
     ZH_LOGI("Inclinometer get position completed successfully.");
     return ESP_OK;
 }
