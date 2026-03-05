@@ -1,8 +1,8 @@
-# ESP32 ESP-IDF component for inclinometer (via rotary encoder)
+# ESP32 ESP-IDF component for inclinometer (via optical rotary encoder)
 
 ## Tested on
 
-1. [ESP32 ESP-IDF v5.5.2](https://docs.espressif.com/projects/esp-idf/en/v5.5.2/esp32/index.html)
+1. [ESP32 ESP-IDF v5.5.3](https://docs.espressif.com/projects/esp-idf/en/v5.5.3/esp32/index.html)
 
 ## SAST Tools
 
@@ -23,7 +23,7 @@ In an existing project, run the following command to install the components:
 
 ```text
 cd ../your_project/components
-git clone http://git.zh.com.ru/esp_components/zh_inclinometer
+git clone https://github.com/aZholtikov/zh_inclinometer
 ```
 
 In the application, add the component:
