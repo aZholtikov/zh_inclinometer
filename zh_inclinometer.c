@@ -55,7 +55,7 @@ esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t *handle, float *angle)
     int pcnt_count = 0;
     pcnt_unit_get_count(handle->pcnt_unit_handle, &pcnt_count);
     float angle_temp = pcnt_count * handle->degrees_per_pulse;
-    *angle = (handle->rotation == true) ? angle_temp : -angle_temp;
+    *angle = (handle->rotation == true) ? angle_temp : ((angle_temp == 0) ? angle_temp : -angle_temp);
     ZH_LOGI("Inclinometer get position completed successfully.");
     return ESP_OK;
 }
