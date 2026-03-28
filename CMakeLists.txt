@@ -1,1 +1,6 @@
-idf_component_register(SRCS "zh_inclinometer.c" INCLUDE_DIRS "include" REQUIRES driver)
+if(${IDF_VERSION_MAJOR} STREQUAL 6)
+    set(requires esp_driver_gpio esp_driver_pcnt)
+else()
+    set(requires driver)
+endif()
+idf_component_register(SRCS "zh_inclinometer.c" INCLUDE_DIRS "include" REQUIRES ${requires})
