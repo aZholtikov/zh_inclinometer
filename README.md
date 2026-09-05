@@ -1,20 +1,22 @@
 # ESP32 ESP-IDF component for inclinometer (via optical rotary encoder)
 
-## Tested on
-
-1. [ESP32 ESP-IDF v6.0.0](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32/index.html)
-
 ## SAST Tools
 
 [PVS-Studio](https://pvs-studio.com/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
 
 ## Features
 
-1. Support up to 8 inclinometers on one device.
+1. Quadrature encoder support with configurable GPIO pins
+2. Configurable pull-up resistor enablement for encoder channels
+3. Support for both clockwise and counter-clockwise rotation directions
+4. Configurable pulses per revolution for accurate angle calculation
+5. Position tracking with get and reset operations
+6. PCNT glitch filter for noise rejection (1000ns)
+7. Multiple inclinometer instances support
 
-## Attention
+## Note
 
-1. For correct operation, please enable the following settings in the menuconfig:
+Enable the following settings in menuconfig:
 
 ```text
 PCNT_CTRL_FUNC_IN_IRAM
@@ -25,7 +27,7 @@ PCNT_ISR_IRAM_SAF
 
 In an existing project, run the following command to install the components:
 
-```text
+```bash
 cd ../your_project/components
 git clone https://github.com/aZholtikov/zh_inclinometer
 ```
@@ -36,12 +38,12 @@ In the application, add the component:
 #include "zh_inclinometer.h"
 ```
 
-## Examples
+## Example
 
 ```c
 #include "zh_inclinometer.h"
 
-zh_inclinometer_handle_t inclinometer_handle = {0};
+zh_inclinometer_handle_t *inclinometer_handle = NULL;
 
 void app_main(void)
 {

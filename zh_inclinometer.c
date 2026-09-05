@@ -13,57 +13,96 @@
         return err;                                  \
     }
 
+/**
+ * @brief Internal structure holding the inclinometer instance state.
+ *
+ * This structure contains all resources and configuration needed to operate
+ * a single inclinometer instance, including PCNT unit and channel handles,
+ * the calculated angle per pulse, and the configured rotation direction.
+ */
+struct _zh_inclinometer_handle_t
+{
+    pcnt_unit_handle_t pcnt_unit_handle;         /*!< PCNT unit handle for the encoder */
+    pcnt_channel_handle_t pcnt_channel_a_handle; /*!< PCNT channel A handle (encoder A pin) */
+    pcnt_channel_handle_t pcnt_channel_b_handle; /*!< PCNT channel B handle (encoder B pin) */
+    float degrees_per_pulse;                     /*!< Degrees per single encoder pulse */
+    bool rotation;                               /*!< Rotation direction flag (true - CW positive) */
+};
+
+/**
+ * @brief Validate the inclinometer initialization configuration.
+ *
+ * Checks that all required configuration parameters are within valid ranges.
+ *
+ * @param config Pointer to the initialization configuration structure.
+ *
+ * @return ESP_OK if the configuration is valid
+ * @return ESP_ERR_INVALID_ARG if encoder_pulses is zero or negative
+ */
 static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_config_t *config);
+
+/**
+ * @brief Initialize PCNT unit and channels for the inclinometer.
+ *
+ * Configures the pulse counter unit with two channels for quadrature
+ * decoding, sets up glitch filtering, and starts the counter.
+ *
+ * @param config Pointer to the initialization configuration structure
+ * @param handle Pointer to the inclinometer handle to store PCNT resources
+ *
+ * @return ESP_OK on success
+ * @return ESP_ERR_INVALID_ARG if GPIO pins are invalid or identical
+ * @return ESP_FAIL if PCNT resource allocation or configuration fails
+ */
 static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle);
 
-esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle) // -V2008
+esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t **handle) // -V2008
 {
     ZH_LOGI("Inclinometer initialization started.");
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer initialization failed. Invalid argument.");
-    ZH_ERROR_CHECK(handle->is_initialized == false, ESP_ERR_INVALID_STATE, NULL, "Inclinometer initialization failed. Inclinometer is already initialized.");
+    ZH_ERROR_CHECK(*handle == NULL, ESP_ERR_INVALID_STATE, NULL, "Inclinometer initialization failed. Inclinometer is already initialized.");
     ZH_ERROR_CHECK(_zh_inclinometer_validate_config(config) == ESP_OK, ESP_FAIL, NULL, "Inclinometer initialization failed. Initial configuration check failed.");
-    ZH_ERROR_CHECK(_zh_inclinometer_pcnt_init(config, handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer initialization failed. PCNT initialization failed.");
-    handle->degrees_per_pulse = 360.0 / config->encoder_pulses;
-    handle->rotation = config->rotation;
-    handle->is_initialized = true;
+    *handle = heap_caps_calloc(1, sizeof(zh_inclinometer_handle_t), MALLOC_CAP_8BIT);
+    ZH_ERROR_CHECK(*handle != NULL, ESP_ERR_NO_MEM, NULL, "Inclinometer initialization failed. Failed to allocate inclinometer handle.");
+    ZH_ERROR_CHECK(_zh_inclinometer_pcnt_init(config, *handle) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Inclinometer initialization failed. PCNT initialization failed.");
+    (*handle)->degrees_per_pulse = 360.0 / config->encoder_pulses;
+    (*handle)->rotation = config->rotation;
     ZH_LOGI("Inclinometer initialization completed successfully.");
     return ESP_OK;
 }
 
-esp_err_t zh_inclinometer_deinit(zh_inclinometer_handle_t *handle) // -V2008
+esp_err_t zh_inclinometer_deinit(zh_inclinometer_handle_t **handle) // -V2008
 {
     ZH_LOGI("Inclinometer deinitialization started.");
-    ZH_ERROR_CHECK(handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer deinitialization failed. Invalid argument.");
-    ZH_ERROR_CHECK(handle->is_initialized == true, ESP_FAIL, NULL, "Inclinometer deinitialization failed. Inclinometer not initialized.");
-    ZH_ERROR_CHECK(pcnt_unit_stop(handle->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT unit stop fail.");
-    ZH_ERROR_CHECK(pcnt_unit_disable(handle->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT unit disable fail.");
-    ZH_ERROR_CHECK(pcnt_del_channel(handle->pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete channel fail.");
-    ZH_ERROR_CHECK(pcnt_del_channel(handle->pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete channel fail.");
-    ZH_ERROR_CHECK(pcnt_del_unit(handle->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete unit fail.");
-    handle->is_initialized = false;
+    ZH_ERROR_CHECK(handle != NULL && *handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer deinitialization failed. Invalid argument.");
+    ZH_ERROR_CHECK(pcnt_unit_stop((*handle)->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT unit stop fail.");
+    ZH_ERROR_CHECK(pcnt_unit_disable((*handle)->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT unit disable fail.");
+    ZH_ERROR_CHECK(pcnt_del_channel((*handle)->pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete channel fail.");
+    ZH_ERROR_CHECK(pcnt_del_channel((*handle)->pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete channel fail.");
+    ZH_ERROR_CHECK(pcnt_del_unit((*handle)->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer deinitialization failed. PCNT delete unit fail.");
+    heap_caps_free(*handle);
+    *handle = NULL;
     ZH_LOGI("Inclinometer deinitialization completed successfully.");
     return ESP_OK;
 }
 
-esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t *handle, float *angle)
+esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t **handle, float *angle)
 {
     ZH_LOGI("Inclinometer get position started.");
-    ZH_ERROR_CHECK(handle != NULL && angle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer get position failed. Invalid argument.");
-    ZH_ERROR_CHECK(handle->is_initialized == true, ESP_FAIL, NULL, "Inclinometer get position failed. Inclinometer not initialized.");
+    ZH_ERROR_CHECK(handle != NULL && *handle != NULL && angle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer get position failed. Invalid argument.");
     int pcnt_count = 0;
-    ZH_ERROR_CHECK(pcnt_unit_get_count(handle->pcnt_unit_handle, &pcnt_count) == ESP_OK, ESP_FAIL, NULL, "Inclinometer get position failed. PCNT unit get count fail.");
-    float angle_temp = pcnt_count * handle->degrees_per_pulse;
-    *angle = (handle->rotation == true) ? angle_temp : ((angle_temp == 0) ? angle_temp : -angle_temp);
+    ZH_ERROR_CHECK(pcnt_unit_get_count((*handle)->pcnt_unit_handle, &pcnt_count) == ESP_OK, ESP_FAIL, NULL, "Inclinometer get position failed. PCNT unit get count fail.");
+    float angle_temp = pcnt_count * (*handle)->degrees_per_pulse;
+    *angle = ((*handle)->rotation == true) ? angle_temp : ((angle_temp == 0) ? angle_temp : -angle_temp); // -V550
     ZH_LOGI("Inclinometer get position completed successfully.");
     return ESP_OK;
 }
 
-esp_err_t zh_inclinometer_reset(zh_inclinometer_handle_t *handle)
+esp_err_t zh_inclinometer_reset(zh_inclinometer_handle_t **handle)
 {
     ZH_LOGI("Inclinometer reset started.");
-    ZH_ERROR_CHECK(handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer reset failed. Invalid argument.");
-    ZH_ERROR_CHECK(handle->is_initialized == true, ESP_FAIL, NULL, "Inclinometer reset failed. Inclinometer not initialized.");
-    ZH_ERROR_CHECK(pcnt_unit_clear_count(handle->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer reset failed. PCNT unit clear count fail.");
+    ZH_ERROR_CHECK(handle != NULL && *handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer reset failed. Invalid argument.");
+    ZH_ERROR_CHECK(pcnt_unit_clear_count((*handle)->pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "Inclinometer reset failed. PCNT unit clear count fail.");
     ZH_LOGI("Inclinometer reset completed successfully.");
     return ESP_OK;
 }
@@ -102,38 +141,38 @@ static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t 
     };
     pcnt_channel_handle_t pcnt_channel_b_handle = NULL;
     ZH_ERROR_CHECK(pcnt_new_channel(pcnt_unit_handle, &pcnt_chan_b_config, &pcnt_channel_b_handle) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_channel_a_handle, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_channel_a_handle, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_HOLD) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_channel_b_handle, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_channel_b_handle, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_HOLD) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_unit_enable(pcnt_unit_handle) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_unit_clear_count(pcnt_unit_handle) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_unit_disable(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT unit disable fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_unit_disable(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT unit disable fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     ZH_ERROR_CHECK(pcnt_unit_start(pcnt_unit_handle) == ESP_OK, ESP_FAIL,
-                   ZH_ERROR_CHECK(pcnt_unit_disable(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT unit disable fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.");
-                   ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail."), "PCNT initialization failed.");
+                   {ZH_ERROR_CHECK(pcnt_unit_disable(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT unit disable fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_a_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_channel(pcnt_channel_b_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete channel fail.")};
+                   {ZH_ERROR_CHECK(pcnt_del_unit(pcnt_unit_handle) == ESP_OK, ESP_FAIL, NULL, "PCNT delete unit fail.")}, "PCNT initialization failed.");
     if (config->pullup == false)
     {
         ZH_ERROR_CHECK(gpio_pullup_dis((gpio_num_t)config->a_gpio_number) == ESP_OK, ESP_FAIL, NULL, "GPIO pullup disable fail.");
