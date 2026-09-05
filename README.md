@@ -6,13 +6,13 @@
 
 ## Features
 
-1. Quadrature encoder support with configurable GPIO pins
-2. Configurable pull-up resistor enablement for encoder channels
-3. Support for both clockwise and counter-clockwise rotation directions
-4. Configurable pulses per revolution for accurate angle calculation
-5. Position tracking with get and reset operations
-6. PCNT glitch filter for noise rejection (1000ns)
-7. Multiple inclinometer instances support
+1. Quadrature encoder support with configurable GPIO pins.
+2. Configurable pull-up resistor enablement for encoder channels.
+3. Support for both clockwise and counter-clockwise rotation directions.
+4. Configurable pulses per revolution for accurate angle calculation.
+5. Position tracking with get and reset operations.
+6. PCNT glitch filter for noise rejection (1000ns).
+7. Multiple inclinometer instances support.
 
 ## Note
 
