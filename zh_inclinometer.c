@@ -56,7 +56,7 @@ static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_con
  */
 static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle);
 
-esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t **handle) // -V2008
+esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t **handle)
 {
     ZH_LOGI("Inclinometer initialization started.");
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer initialization failed. Invalid argument.");
@@ -71,7 +71,7 @@ esp_err_t zh_inclinometer_init(const zh_inclinometer_init_config_t *config, zh_i
     return ESP_OK;
 }
 
-esp_err_t zh_inclinometer_deinit(zh_inclinometer_handle_t **handle) // -V2008
+esp_err_t zh_inclinometer_deinit(zh_inclinometer_handle_t **handle)
 {
     ZH_LOGI("Inclinometer deinitialization started.");
     ZH_ERROR_CHECK(handle != NULL && *handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Inclinometer deinitialization failed. Invalid argument.");
@@ -93,7 +93,7 @@ esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t **handle, float *angle)
     int pcnt_count = 0;
     ZH_ERROR_CHECK(pcnt_unit_get_count((*handle)->pcnt_unit_handle, &pcnt_count) == ESP_OK, ESP_FAIL, NULL, "Inclinometer get position failed. PCNT unit get count fail.");
     float angle_temp = pcnt_count * (*handle)->degrees_per_pulse;
-    *angle = ((*handle)->rotation == true) ? angle_temp : ((angle_temp == 0) ? angle_temp : -angle_temp); // -V550
+    *angle = ((*handle)->rotation == true) ? angle_temp : ((angle_temp == 0) ? angle_temp : -angle_temp);
     ZH_LOGI("Inclinometer get position completed successfully.");
     return ESP_OK;
 }
@@ -113,7 +113,7 @@ static esp_err_t _zh_inclinometer_validate_config(const zh_inclinometer_init_con
     return ESP_OK;
 }
 
-static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle) // -V2008
+static esp_err_t _zh_inclinometer_pcnt_init(const zh_inclinometer_init_config_t *config, zh_inclinometer_handle_t *handle)
 {
     ZH_ERROR_CHECK(config->a_gpio_number < GPIO_NUM_MAX && config->b_gpio_number < GPIO_NUM_MAX, ESP_ERR_INVALID_ARG, NULL, "Invalid GPIO number.")
     ZH_ERROR_CHECK(config->a_gpio_number != config->b_gpio_number, ESP_ERR_INVALID_ARG, NULL, "Encoder A and B GPIO is same.")
