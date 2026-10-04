@@ -10,15 +10,6 @@
 6. PCNT glitch filter for noise rejection (1000ns).
 7. Multiple inclinometer instances support.
 
-## Note
-
-Enable the following settings in menuconfig:
-
-```text
-PCNT_CTRL_FUNC_IN_IRAM
-PCNT_ISR_IRAM_SAF
-```
-
 ## Using
 
 In an existing project, run the following command to install the components:

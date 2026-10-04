@@ -20,11 +20,14 @@
 
 #pragma once
 
+#include "stdbool.h"
+#include "stdint.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_heap_caps.h"
 
 #define ZH_INCLINOMETER_INIT_CONFIG_DEFAULT() \
     {                                         \
@@ -63,11 +66,11 @@ extern "C"
      */
     typedef struct
     {
-        uint8_t a_gpio_number;   /*!< Encoder A channel GPIO number */
-        uint8_t b_gpio_number;   /*!< Encoder B channel GPIO number */
-        bool pullup;             /*!< GPIO pull-up resistor enable (true) or disable (false) */
-        bool rotation;           /*!< Rotation direction: true - positive for CW, false - positive for CCW */
-        uint16_t encoder_pulses; /*!< Number of encoder pulses per one full rotation */
+        gpio_num_t a_gpio_number; /*!< Encoder A channel GPIO number */
+        gpio_num_t b_gpio_number; /*!< Encoder B channel GPIO number */
+        bool pullup;              /*!< GPIO pull-up resistor enable (true) or disable (false) */
+        bool rotation;            /*!< Rotation direction: true - positive for CW, false - positive for CCW */
+        uint16_t encoder_pulses;  /*!< Number of encoder pulses per one full rotation */
     } zh_inclinometer_init_config_t;
 
     /**
@@ -78,7 +81,7 @@ extern "C"
      * and starts the pulse counter.
      *
      * @param[in] config Pointer to the inclinometer initialization configuration
-     *                   structure. Can point to a temporary variable (must not be NULL)
+     *                   structure (can point to a temporary variable, must not be NULL)
      * @param[out] handle Pointer to the unique inclinometer handle (must be NULL)
      *
      * @return ESP_OK on success
@@ -96,14 +99,13 @@ extern "C"
      * PCNT unit, frees the inclinometer handle memory, and sets the handle to
      * NULL.
      *
-     * @param[in, out] handle Pointer to the unique inclinometer handle (must not be NULL)
+     * @param[in,out] handle Pointer to the unique inclinometer handle (must not be NULL)
      *
      * @note After deinitialization, the handle is invalidated and must not be
      *       used. Call zh_inclinometer_init() again to reinitialize.
      *
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG if handle or *handle is NULL
-     * @return ESP_FAIL if PCNT stop, disable, or deletion failed
      */
     esp_err_t zh_inclinometer_deinit(zh_inclinometer_handle_t **handle);
 
