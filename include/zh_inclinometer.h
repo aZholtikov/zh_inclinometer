@@ -2,7 +2,7 @@
  * @file zh_inclinometer.h
  *
  * @brief Header file for the zh_inclinometer library providing encoder-based
- *        angle measurement and position tracking functionality.
+ * angle measurement and position tracking functionality.
  *
  * This library implements an inclinometer interface based on a quadrature
  * encoder connected to two GPIO pins. It uses the ESP-IDF pulse counter
@@ -99,7 +99,7 @@ extern "C"
      * PCNT unit, frees the inclinometer handle memory, and sets the handle to
      * NULL.
      *
-     * @param[in,out] handle Pointer to the unique inclinometer handle (must not be NULL)
+     * @param[in,out] handle Pointer to the inclinometer handle pointer (will be set to NULL)
      *
      * @note After deinitialization, the handle is invalidated and must not be
      *       used. Call zh_inclinometer_init() again to reinitialize.

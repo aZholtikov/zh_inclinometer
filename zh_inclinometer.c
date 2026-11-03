@@ -101,7 +101,10 @@ esp_err_t zh_inclinometer_get(zh_inclinometer_handle_t **handle, float *angle)
     ZH_ERROR_CHECK(pcnt_unit_get_count((*handle)->pcnt_unit_handle, &pcnt_count) == ESP_OK, ESP_FAIL, NULL, "Inclinometer get position failed. PCNT unit get count fail.");
     float angle_temp = pcnt_count * (*handle)->degrees_per_pulse;
     *angle = (*handle)->rotation == true ? angle_temp : -angle_temp;
-    *angle += 0.0f;
+    if (*angle == 0.0)
+    {
+        *angle = 0.0;
+    }
     ZH_LOGI("Inclinometer get position completed successfully.");
     return ESP_OK;
 }
