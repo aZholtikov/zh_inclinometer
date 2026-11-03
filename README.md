@@ -10,9 +10,13 @@
 6. PCNT glitch filter for noise rejection (1000ns).
 7. Multiple inclinometer instances support.
 
+## Attention
+
+1. The maximum value of encoder_pulses is 8191, limited by the PCNT counter range of +/-32767.
+
 ## Using
 
-In an existing project, run the following command to install the components:
+In an existing project, run the following command to install the component:
 
 ```bash
 cd ../your_project/components
@@ -25,7 +29,9 @@ In the application, add the component:
 #include "zh_inclinometer.h"
 ```
 
-## Example
+## Examples
+
+### Basic Example
 
 ```c
 #include "zh_inclinometer.h"
@@ -39,13 +45,27 @@ void app_main(void)
     config.a_gpio_number = GPIO_NUM_26;
     config.b_gpio_number = GPIO_NUM_27;
     config.encoder_pulses = 3600;
-    zh_inclinometer_init(&config, &inclinometer_handle);
+    esp_err_t ret = zh_inclinometer_init(&config, &inclinometer_handle);
+    if (ret != ESP_OK)
+    {
+        printf("Inclinometer initialization error: %s\n", esp_err_to_name(ret));
+        return;
+    }
+    ret = zh_inclinometer_reset(&inclinometer_handle);
+    if (ret == ESP_OK)
+    {
+        printf("Inclinometer position reset to zero.\n");
+    }
     for (;;)
     {
         float angle = 0;
-        zh_inclinometer_get(&inclinometer_handle, &angle);
-        printf("Inclinometer position is %0.2f degrees.\n", angle);
+        ret = zh_inclinometer_get(&inclinometer_handle, &angle);
+        if (ret == ESP_OK)
+        {
+            printf("Inclinometer position is %0.2f degrees.\n", angle);
+        }
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
+    zh_inclinometer_deinit(&inclinometer_handle);
 }
 ```
